@@ -1,0 +1,233 @@
+below is a production-ready front-end structure written in React + TailwindCSS, using a corporate tone and the exact five stages from your redesigned application.
+Everything reads like a formal banking form, not a “journey.” You can drop these files into your /frontend/src folder in Replit.
+
+📁 Folder Setup
+frontend/src/
+├── App.jsx
+├── components/
+│   ├── SectionHeader.jsx
+│   ├── UploadBox.jsx
+│   ├── VerificationBadge.jsx
+│   └── ProgressTabs.jsx
+├── pages/
+│   ├── EntityInformation.jsx
+│   ├── GovernanceOwnership.jsx
+│   ├── BusinessOperations.jsx
+│   ├── AccountFinancialDetails.jsx
+│   └── DocumentationCompliance.jsx
+└── styles/
+    └── tailwind.css
+
+🧭 App.jsx
+import React, { useState } from "react";
+import ProgressTabs from "./components/ProgressTabs";
+import EntityInformation from "./pages/EntityInformation";
+import GovernanceOwnership from "./pages/GovernanceOwnership";
+import BusinessOperations from "./pages/BusinessOperations";
+import AccountFinancialDetails from "./pages/AccountFinancialDetails";
+import DocumentationCompliance from "./pages/DocumentationCompliance";
+
+export default function App() {
+  const [activeStep, setActiveStep] = useState(1);
+
+  const steps = [
+    "Entity Information",
+    "Governance & Ownership",
+    "Business Operations",
+    "Account & Financial Details",
+    "Documentation & Compliance",
+  ];
+
+  return (
+    <div className="min-h-screen bg-gray-50 text-gray-800">
+      <header className="border-b bg-white p-4 shadow-sm">
+        <h1 className="text-2xl font-semibold text-blue-900">
+          Corporate Account Application
+        </h1>
+        <p className="text-sm text-gray-500">
+          All information is collected for due diligence and compliance purposes.
+        </p>
+      </header>
+
+      <main className="p-6 max-w-7xl mx-auto">
+        <ProgressTabs steps={steps} activeStep={activeStep} setActiveStep={setActiveStep} />
+
+        <div className="mt-8">
+          {activeStep === 1 && <EntityInformation />}
+          {activeStep === 2 && <GovernanceOwnership />}
+          {activeStep === 3 && <BusinessOperations />}
+          {activeStep === 4 && <AccountFinancialDetails />}
+          {activeStep === 5 && <DocumentationCompliance />}
+        </div>
+      </main>
+
+      <footer className="border-t bg-white text-xs text-gray-500 text-center p-3 mt-8">
+        Confidentiality Notice: Information provided in this application is strictly confidential
+        and will be used only for regulatory and compliance verification.
+      </footer>
+    </div>
+  );
+}
+
+🧩 ProgressTabs.jsx
+export default function ProgressTabs({ steps, activeStep, setActiveStep }) {
+  return (
+    <nav className="flex justify-between bg-white rounded-md shadow-sm overflow-hidden">
+      {steps.map((label, index) => (
+        <button
+          key={label}
+          onClick={() => setActiveStep(index + 1)}
+          className={`flex-1 px-4 py-3 text-sm border-r last:border-0 transition-all
+            ${
+              activeStep === index + 1
+                ? "bg-blue-900 text-white font-medium"
+                : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+            }`}
+        >
+          {`Step ${index + 1}`} — {label}
+        </button>
+      ))}
+    </nav>
+  );
+}
+
+🧱 SectionHeader.jsx
+export default function SectionHeader({ title, subtitle }) {
+  return (
+    <div className="mb-6 border-b pb-2">
+      <h2 className="text-lg font-semibold text-blue-900">{title}</h2>
+      {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
+    </div>
+  );
+}
+
+📤 UploadBox.jsx
+export default function UploadBox({ label, onChange }) {
+  return (
+    <div className="mb-4">
+      <p className="text-sm font-medium text-gray-700 mb-1">{label}</p>
+      <label className="block border-2 border-dashed border-gray-300 rounded-md p-4 text-center text-gray-500 cursor-pointer hover:border-blue-500">
+        <input
+          type="file"
+          className="hidden"
+          accept=".pdf,.jpg,.png"
+          onChange={onChange}
+        />
+        Drop file here or click to browse
+      </label>
+    </div>
+  );
+}
+
+✅ VerificationBadge.jsx
+export default function VerificationBadge({ status }) {
+  const colors = {
+    Verified: "bg-green-100 text-green-700 border-green-400",
+    Pending: "bg-yellow-100 text-yellow-700 border-yellow-400",
+    Rejected: "bg-red-100 text-red-700 border-red-400",
+  };
+  return (
+    <span
+      className={`text-xs px-2 py-1 border rounded-full ${
+        colors[status] || "bg-gray-100 text-gray-600 border-gray-300"
+      }`}
+    >
+      {status || "Pending Verification"}
+    </span>
+  );
+}
+
+📄 Example Page — EntityInformation.jsx
+import SectionHeader from "../components/SectionHeader";
+
+export default function EntityInformation() {
+  return (
+    <div className="bg-white rounded-lg shadow p-6">
+      <SectionHeader
+        title="Entity Information"
+        subtitle="Provide registered and trading names, contact details, and incorporation information."
+      />
+      <form className="grid grid-cols-2 gap-4 text-sm">
+        <label className="flex flex-col">
+          Registered Entity Name *
+          <input type="text" className="mt-1 border rounded p-2" required />
+        </label>
+
+        <label className="flex flex-col">
+          Trading Name
+          <input type="text" className="mt-1 border rounded p-2" />
+        </label>
+
+        <label className="flex flex-col">
+          Contact First Name *
+          <input type="text" className="mt-1 border rounded p-2" required />
+        </label>
+
+        <label className="flex flex-col">
+          Contact Last Name *
+          <input type="text" className="mt-1 border rounded p-2" required />
+        </label>
+
+        <label className="flex flex-col">
+          Email *
+          <input type="email" className="mt-1 border rounded p-2" required />
+        </label>
+
+        <label className="flex flex-col">
+          Mobile *
+          <input type="tel" className="mt-1 border rounded p-2" required />
+        </label>
+
+        <label className="flex flex-col col-span-2">
+          Registered Office Address *
+          <textarea className="mt-1 border rounded p-2" rows="2" required></textarea>
+        </label>
+
+        <label className="flex flex-col col-span-2">
+          Business / Head Office Address
+          <textarea className="mt-1 border rounded p-2" rows="2"></textarea>
+        </label>
+
+        <label className="flex flex-col">
+          Website
+          <input type="url" className="mt-1 border rounded p-2" />
+        </label>
+
+        <label className="flex flex-col">
+          Incorporation Country *
+          <input type="text" className="mt-1 border rounded p-2" required />
+        </label>
+
+        <label className="flex flex-col">
+          Incorporation Date *
+          <input type="date" className="mt-1 border rounded p-2" required />
+        </label>
+
+        <label className="flex flex-col">
+          Incorporation Number
+          <input type="text" className="mt-1 border rounded p-2" />
+        </label>
+
+        <label className="flex flex-col col-span-2">
+          Licenses Held
+          <input type="text" className="mt-1 border rounded p-2" />
+        </label>
+      </form>
+    </div>
+  );
+}
+
+
+(Repeat this clean, corporate layout for the other four pages — Governance, Business, Account, Documentation — mirroring your redesigned structure.)
+
+🧠 Implementation Notes
+
+Keep no animations, only subtle hover and focus states.
+
+Replace “journey” language with application, review, verification, submission.
+
+Use muted color palette: navy, light gray, off-white.
+
+Each upload box should connect to your /api/upload endpoint for AI verification.
+
+After all five steps are complete → show a final Application Summary Page before submission.
