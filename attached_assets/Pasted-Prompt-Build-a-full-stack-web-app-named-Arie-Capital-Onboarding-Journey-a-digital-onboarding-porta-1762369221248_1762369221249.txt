@@ -1,0 +1,137 @@
+Prompt:
+Build a full-stack web app named Arie Capital Onboarding Journey, a digital onboarding portal for corporate account opening with real-time AI document verification.
+The flow should feel cinematic — a guided journey card that evolves as users progress through compliance stages.
+
+⚙️ ARCHITECTURE OVERVIEW
+
+Frontend: React + TailwindCSS + Framer Motion (animated journey card UI)
+
+Backend: Node.js (Express)
+
+Database (Hybrid Mode):
+
+Default: Replit DB for instant local testing
+
+Optional: Supabase (PostgreSQL) — switch by setting DB_MODE="supabase" and providing SUPABASE_URL + SUPABASE_KEY.
+
+Include helper module /utils/db.js that routes queries automatically depending on DB_MODE.
+
+AI Microservice: Python (FastAPI) or JS worker at /ai/verify
+
+Hosting: Replit full-stack container
+
+💠 FRONT-END DESIGN — JOURNEY CARD UI
+
+Three animated stages laid out horizontally:
+
+Entity Details
+
+Ownership & UBO Verification
+
+Business & Funds Validation
+
+Use Framer Motion for flips, fades, and progress-bar ripples.
+
+Progress bar animates like merging water droplets (metaphor for verified data).
+
+Upload zones with live status chips: ✅ Verified | ⚠ Check | ❌ Invalid.
+
+Brand palette: navy #002b5c, cyan #00a0df, silver #b3c0c9.
+
+Footer tagline: Every Entity Has a Journey.
+
+“Journey Complete” screen with confetti and a Download Due Diligence Report button (+ QR code generator).
+
+🧱 BACK-END ENDPOINTS (Express)
+
+/api/entity – create/update entity record
+
+/api/upload – receive files, store metadata, trigger AI check
+
+/api/status/:id – fetch current progress
+
+/api/report/:id – generate PDF Due Diligence Summary
+
+🤖 AI VERIFICATION SERVICE
+
+Endpoint: /ai/verify
+
+Input: { fileType, entityName, metadata }
+
+Output: { status:"Verified|Warning|Rejected", confidence: float, notes: string }
+
+For prototype, generate random scores (85–99 %) and brief text feedback.
+
+Include placeholders to later plug into:
+
+Azure Document Intelligence for OCR & tamper detection
+
+Onfido / Vouched for ID verification
+
+Google Maps API for address validation
+
+OpenCorporates API for registration lookup
+
+📊 ADMIN DASHBOARD
+
+Hidden /admin route protected by simple login.
+
+Display entity list + risk score + AI confidence charts.
+
+Filters: Verified / Pending / Failed.
+
+Button to export combined Due Diligence Report PDF.
+
+🗄️ DATABASE SCHEMA
+
+entities: id, name, country, incorporation_date, risk_score, status
+
+documents: id, entity_id, type, filename, ai_status, confidence_score
+
+ubos: id, entity_id, name, id_number, address_verified
+
+activities: id, entity_id, sector, description, source_of_funds, ai_score
+
+When using Replit DB, store as key-value JSON objects.
+
+When using Supabase, use the same schema in SQL.
+
+🌐 EXPERIENCE FLOW
+
+Applicant clicks Start Journey → creates digital card.
+
+Enters company details → uploads certificate → AI verifies → card progresses.
+
+Adds UBOs → uploads IDs + address proof → AI verifies.
+
+Adds Business info + Source of Funds → AI scores risk.
+
+On 100 % completion → PDF report + confirmation email sent.
+
+🧩 TECH EXTRAS
+
+Modular folder structure (/frontend, /backend, /ai).
+
+Reusable React components for CardStage, UploadBox, ProgressRing.
+
+Dummy AI data for offline demo.
+
+Environment variables in .env:
+
+DB_MODE=replit
+SUPABASE_URL=
+SUPABASE_KEY=
+AZURE_KEY=
+OPENAI_KEY=
+
+
+Include package.json with scripts:
+
+"dev" → concurrently run backend and frontend
+
+"ai" → launch FastAPI microservice
+
+💾 OUTPUT
+A fully functional prototype that runs immediately on Replit using Replit DB,
+but can switch to Supabase for production by changing DB_MODE.
+Visually, the app should feel like a sleek, animated KYC journey — not a form.
