@@ -14,52 +14,57 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-// Mock data for demo
-const mockEntities = [
+// todo: remove mock functionality - Mock data for demo
+const mockApplications = [
   {
-    id: "1",
-    name: "Acme Corporation",
+    id: "APP-2025-001",
+    name: "Acme Corporation Ltd",
     country: "United States",
     status: "verified" as const,
     riskScore: 95,
     aiConfidence: 98,
-    date: "2025-01-15",
+    submissionDate: "2025-01-15",
+    reviewDate: "2025-01-18",
   },
   {
-    id: "2",
-    name: "Global Tech Solutions",
+    id: "APP-2025-002",
+    name: "Global Tech Solutions PLC",
     country: "United Kingdom",
     status: "warning" as const,
     riskScore: 72,
     aiConfidence: 85,
-    date: "2025-01-14",
+    submissionDate: "2025-01-14",
+    reviewDate: null,
   },
   {
-    id: "3",
+    id: "APP-2025-003",
     name: "Innovation Labs Inc",
     country: "Singapore",
     status: "pending" as const,
     riskScore: 0,
     aiConfidence: 0,
-    date: "2025-01-16",
+    submissionDate: "2025-01-16",
+    reviewDate: null,
   },
   {
-    id: "4",
-    name: "Sunrise Ventures",
-    country: "Canada",
+    id: "APP-2025-004",
+    name: "Sunrise Ventures SA",
+    country: "Switzerland",
     status: "rejected" as const,
     riskScore: 45,
     aiConfidence: 92,
-    date: "2025-01-13",
+    submissionDate: "2025-01-13",
+    reviewDate: "2025-01-17",
   },
   {
-    id: "5",
-    name: "NextGen Industries",
+    id: "APP-2025-005",
+    name: "NextGen Industries Pty",
     country: "Australia",
     status: "verified" as const,
     riskScore: 88,
     aiConfidence: 96,
-    date: "2025-01-15",
+    submissionDate: "2025-01-15",
+    reviewDate: "2025-01-19",
   },
 ];
 
@@ -67,18 +72,19 @@ export default function Admin() {
   const [filter, setFilter] = useState<"all" | "verified" | "pending" | "rejected">("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const filteredEntities = mockEntities.filter((entity) => {
-    const matchesFilter = filter === "all" || entity.status === filter;
-    const matchesSearch = entity.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         entity.country.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredApplications = mockApplications.filter((app) => {
+    const matchesFilter = filter === "all" || app.status === filter;
+    const matchesSearch = app.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         app.country.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         app.id.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesFilter && matchesSearch;
   });
 
   const stats = {
-    total: mockEntities.length,
-    verified: mockEntities.filter((e) => e.status === "verified").length,
-    pending: mockEntities.filter((e) => e.status === "pending").length,
-    failed: mockEntities.filter((e) => e.status === "rejected").length,
+    total: mockApplications.length,
+    verified: mockApplications.filter((e) => e.status === "verified").length,
+    pending: mockApplications.filter((e) => e.status === "pending").length,
+    failed: mockApplications.filter((e) => e.status === "rejected").length,
   };
 
   return (
@@ -86,17 +92,17 @@ export default function Admin() {
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2" data-testid="text-admin-title">
-            Admin Dashboard
+            Application Review Dashboard
           </h1>
           <p className="text-muted-foreground">
-            Monitor and manage corporate onboarding applications
+            Monitor and manage corporate account applications
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Entities</CardTitle>
+              <CardTitle className="text-sm font-medium">Total Applications</CardTitle>
               <Building2 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -106,20 +112,20 @@ export default function Admin() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Verified</CardTitle>
+              <CardTitle className="text-sm font-medium">Approved</CardTitle>
               <CheckCircle2 className="h-4 w-4 text-cyan" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-cyan" data-testid="text-stat-verified">{stats.verified}</div>
               <p className="text-xs text-muted-foreground">
-                {Math.round((stats.verified / stats.total) * 100)}% completion rate
+                {Math.round((stats.verified / stats.total) * 100)}% approval rate
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending</CardTitle>
+              <CardTitle className="text-sm font-medium">Under Review</CardTitle>
               <AlertTriangle className="h-4 w-4 text-amber-500" />
             </CardHeader>
             <CardContent>
@@ -129,7 +135,7 @@ export default function Admin() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Failed</CardTitle>
+              <CardTitle className="text-sm font-medium">Rejected</CardTitle>
               <XCircle className="h-4 w-4 text-destructive" />
             </CardHeader>
             <CardContent>
@@ -141,12 +147,12 @@ export default function Admin() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between flex-wrap gap-4">
-              <CardTitle>Entity Applications</CardTitle>
+              <CardTitle>Application Records</CardTitle>
               <div className="flex items-center gap-2 flex-wrap">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search entities..."
+                    placeholder="Search applications..."
                     className="pl-9 w-64"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -168,7 +174,7 @@ export default function Admin() {
                     onClick={() => setFilter("verified")}
                     data-testid="button-filter-verified"
                   >
-                    Verified
+                    Approved
                   </Button>
                   <Button
                     variant={filter === "pending" ? "default" : "outline"}
@@ -184,12 +190,12 @@ export default function Admin() {
                     onClick={() => setFilter("rejected")}
                     data-testid="button-filter-rejected"
                   >
-                    Failed
+                    Rejected
                   </Button>
                 </div>
                 <Button data-testid="button-export-all">
                   <Download className="w-4 h-4 mr-2" />
-                  Export All
+                  Export Report
                 </Button>
               </div>
             </div>
@@ -198,58 +204,62 @@ export default function Admin() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Application ID</TableHead>
                   <TableHead>Entity Name</TableHead>
                   <TableHead>Country</TableHead>
-                  <TableHead>Date</TableHead>
+                  <TableHead>Submission Date</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Risk Score</TableHead>
+                  <TableHead>Compliance Score</TableHead>
                   <TableHead>AI Confidence</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredEntities.map((entity) => (
-                  <TableRow key={entity.id} data-testid={`row-entity-${entity.id}`}>
-                    <TableCell className="font-medium" data-testid={`text-name-${entity.id}`}>
-                      {entity.name}
+                {filteredApplications.map((app) => (
+                  <TableRow key={app.id} data-testid={`row-application-${app.id}`}>
+                    <TableCell className="font-mono text-xs" data-testid={`text-id-${app.id}`}>
+                      {app.id}
                     </TableCell>
-                    <TableCell>{entity.country}</TableCell>
-                    <TableCell className="text-muted-foreground">{entity.date}</TableCell>
+                    <TableCell className="font-medium" data-testid={`text-name-${app.id}`}>
+                      {app.name}
+                    </TableCell>
+                    <TableCell>{app.country}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{app.submissionDate}</TableCell>
                     <TableCell>
-                      <StatusChip status={entity.status} />
+                      <StatusChip status={app.status} />
                     </TableCell>
                     <TableCell>
-                      {entity.riskScore > 0 ? (
+                      {app.riskScore > 0 ? (
                         <Badge
                           variant="outline"
                           className={
-                            entity.riskScore >= 80
+                            app.riskScore >= 80
                               ? "bg-cyan/10 text-cyan border-cyan"
-                              : entity.riskScore >= 60
+                              : app.riskScore >= 60
                               ? "bg-amber-500/10 text-amber-500 border-amber-500"
                               : "bg-destructive/10 text-destructive border-destructive"
                           }
                         >
-                          {entity.riskScore}%
+                          {app.riskScore}%
                         </Badge>
                       ) : (
-                        <span className="text-xs text-muted-foreground">N/A</span>
+                        <span className="text-xs text-muted-foreground">Pending</span>
                       )}
                     </TableCell>
                     <TableCell>
-                      {entity.aiConfidence > 0 ? (
-                        <span className="text-sm font-medium">{entity.aiConfidence}%</span>
+                      {app.aiConfidence > 0 ? (
+                        <span className="text-sm font-medium">{app.aiConfidence}%</span>
                       ) : (
-                        <span className="text-xs text-muted-foreground">N/A</span>
+                        <span className="text-xs text-muted-foreground">—</span>
                       )}
                     </TableCell>
                     <TableCell>
                       <Button
                         variant="ghost"
                         size="sm"
-                        data-testid={`button-view-${entity.id}`}
+                        data-testid={`button-view-${app.id}`}
                       >
-                        View Details
+                        Review
                       </Button>
                     </TableCell>
                   </TableRow>
