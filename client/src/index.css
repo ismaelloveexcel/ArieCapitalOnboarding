@@ -33,6 +33,9 @@
   --popover-border: 210 12% 88%;
   --primary: 195 100% 44%;
   --primary-foreground: 0 0% 100%;
+  --navy: 210 100% 18%;
+  --cyan: 195 100% 44%;
+  --silver: 210 13% 71%;
   --secondary: 210 8% 91%;
   --secondary-foreground: 210 100% 11%;
   --muted: 210 10% 92%;
@@ -116,6 +119,9 @@
   --popover-border: 210 8% 18%;
   --primary: 195 100% 44%;
   --primary-foreground: 0 0% 100%;
+  --navy: 210 100% 18%;
+  --cyan: 195 100% 44%;
+  --silver: 210 13% 71%;
   --secondary: 210 8% 16%;
   --secondary-foreground: 0 0% 98%;
   --muted: 210 8% 15%;

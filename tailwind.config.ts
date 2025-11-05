@@ -81,6 +81,9 @@ export default {
           busy: "rgb(239 68 68)",
           offline: "rgb(156 163 175)",
         },
+        navy: "hsl(var(--navy) / <alpha-value>)",
+        cyan: "hsl(var(--cyan) / <alpha-value>)",
+        silver: "hsl(var(--silver) / <alpha-value>)",
       },
       fontFamily: {
         sans: ["var(--font-sans)"],
