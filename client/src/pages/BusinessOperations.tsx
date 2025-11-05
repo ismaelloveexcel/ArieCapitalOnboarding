@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 
 interface BusinessOperationsProps {
-  onNext: () => void;
+  onNext: (data: any) => void;
   onBack: () => void;
 }
 
@@ -107,7 +107,12 @@ export default function BusinessOperations({ onNext, onBack }: BusinessOperation
           <Button type="button" variant="outline" onClick={onBack} data-testid="button-back">
             Back
           </Button>
-          <Button type="button" onClick={onNext} disabled={!isValid()} data-testid="button-next">
+          <Button
+            type="button"
+            onClick={() => onNext(formData)}
+            disabled={!isValid()}
+            data-testid="button-next"
+          >
             Continue to Next Step
           </Button>
         </div>

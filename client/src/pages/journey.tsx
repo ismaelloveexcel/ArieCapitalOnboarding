@@ -1,5 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import ProgressTabs from "@/components/ProgressTabs";
+import ComplianceAgentChat from "@/components/ComplianceAgentChat";
 import EntityInformation from "./EntityInformation";
 import GovernanceOwnership from "./GovernanceOwnership";
 import BusinessOperations from "./BusinessOperations";
@@ -8,11 +11,11 @@ import DocumentationCompliance from "./DocumentationCompliance";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import type { Application } from "@shared/schema";
 
 export default function Journey() {
   const [activeStep, setActiveStep] = useState(0);
-  const [applicationSubmitted, setApplicationSubmitted] = useState(false);
-  const [submissionData, setSubmissionData] = useState<{ authRepName: string; authRepRole: string } | null>(null);
+  const [applicationId, setApplicationId] = useState<string | null>(null);
 
   const steps = [
     "Entity Information",
@@ -22,9 +25,70 @@ export default function Journey() {
     "Documentation & Compliance",
   ];
 
-  const handleNext = () => {
-    if (activeStep < steps.length - 1) {
-      setActiveStep(activeStep + 1);
+  // Create application on mount
+  useEffect(() => {
+    if (!applicationId) {
+      createApplicationMutation.mutate();
+    }
+  }, []);
+
+  const createApplicationMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("POST", "/api/applications", {});
+    },
+    onSuccess: (data: any) => {
+      setApplicationId(data.application.id);
+    },
+  });
+
+  const { data: application } = useQuery<Application>({
+    queryKey: ["/api/applications", applicationId],
+    enabled: !!applicationId,
+  });
+
+  const updateStageMutation = useMutation({
+    mutationFn: async ({ stage, data }: { stage: number; data: any }) => {
+      return await apiRequest("PATCH", `/api/applications/${applicationId}/stage`, {
+        stage,
+        data,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["/api/applications", applicationId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/applications", applicationId, "messages"],
+      });
+    },
+  });
+
+  const submitApplicationMutation = useMutation({
+    mutationFn: async (data: { authRepName: string; authRepRole: string }) => {
+      return await apiRequest("POST", `/api/applications/${applicationId}/submit`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["/api/applications", applicationId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/applications", applicationId, "messages"],
+      });
+    },
+  });
+
+  const handleNext = (stageData: any) => {
+    if (applicationId) {
+      updateStageMutation.mutate(
+        { stage: activeStep, data: stageData },
+        {
+          onSuccess: () => {
+            if (activeStep < steps.length - 1) {
+              setActiveStep(activeStep + 1);
+            }
+          },
+        }
+      );
     }
   };
 
@@ -35,11 +99,23 @@ export default function Journey() {
   };
 
   const handleSubmit = (data: { authRepName: string; authRepRole: string }) => {
-    setSubmissionData(data);
-    setApplicationSubmitted(true);
+    if (applicationId) {
+      submitApplicationMutation.mutate(data);
+    }
   };
 
-  if (applicationSubmitted) {
+  if (!applicationId || !application) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-navy/5 via-background to-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-cyan border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Initializing application...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (application.status === "submitted") {
     return (
       <div className="min-h-screen bg-gradient-to-br from-navy/5 via-background to-background py-12 px-4">
         <div className="max-w-2xl mx-auto">
@@ -60,31 +136,34 @@ export default function Journey() {
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Application Reference</span>
                   <span className="text-sm font-mono font-medium" data-testid="text-reference">
-                    APP-{new Date().getFullYear()}-{String(Math.floor(Math.random() * 9999)).padStart(4, "0")}
+                    {application.referenceNumber}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Submitted By</span>
-                  <span className="text-sm font-medium">{submissionData?.authRepName}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Role</span>
-                  <span className="text-sm font-medium">{submissionData?.authRepRole}</span>
-                </div>
-                <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Submission Date</span>
-                  <span className="text-sm font-medium">{new Date().toLocaleDateString()}</span>
+                  <span className="text-sm font-medium">
+                    {application.submittedAt ? new Date(application.submittedAt).toLocaleDateString() : "—"}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Compliance Score</span>
+                  <span className="text-sm font-medium text-cyan">
+                    {application.complianceScore || 0}/100
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Review Timeline</span>
-                  <span className="text-sm font-medium text-cyan" data-testid="text-timeline">3-5 Business Days</span>
+                  <span className="text-sm font-medium text-cyan" data-testid="text-timeline">
+                    3-5 Business Days
+                  </span>
                 </div>
               </div>
 
               <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                 <p className="text-sm text-blue-900 dark:text-blue-100">
-                  <strong>Next Steps:</strong> Our compliance team will review your application and supporting documents. 
-                  You will receive a confirmation email with further instructions within 24 hours.
+                  <strong>Next Steps:</strong> Our compliance team will review your application and
+                  supporting documents. You will receive a confirmation email with further
+                  instructions within 24 hours.
                 </p>
               </div>
 
@@ -92,26 +171,12 @@ export default function Journey() {
                 <Download className="w-4 h-4 mr-2" />
                 Download Application Summary
               </Button>
-
-              <div className="text-center">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setApplicationSubmitted(false);
-                    setActiveStep(0);
-                    setSubmissionData(null);
-                  }}
-                  data-testid="button-new-application"
-                >
-                  Submit New Application
-                </Button>
-              </div>
             </CardContent>
           </Card>
 
           <footer className="text-center text-xs text-muted-foreground mt-8">
-            Confidentiality Notice: Information provided in this application is strictly confidential
-            and will be used only for regulatory and compliance verification.
+            Confidentiality Notice: Information provided in this application is strictly
+            confidential and will be used only for regulatory and compliance verification.
           </footer>
         </div>
       </div>
@@ -128,18 +193,38 @@ export default function Journey() {
           <p className="text-sm text-muted-foreground mt-1">
             All information is collected for due diligence and compliance purposes
           </p>
+          <div className="mt-2 flex items-center gap-3">
+            <span className="text-xs text-muted-foreground">Reference:</span>
+            <span className="text-xs font-mono font-medium">{application.referenceNumber}</span>
+          </div>
         </div>
       </header>
 
       <main className="p-6 max-w-7xl mx-auto">
-        <ProgressTabs steps={steps} activeStep={activeStep} onStepClick={setActiveStep} />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <ProgressTabs steps={steps} activeStep={activeStep} onStepClick={setActiveStep} />
 
-        <div className="mt-8">
-          {activeStep === 0 && <EntityInformation onNext={handleNext} />}
-          {activeStep === 1 && <GovernanceOwnership onNext={handleNext} onBack={handleBack} />}
-          {activeStep === 2 && <BusinessOperations onNext={handleNext} onBack={handleBack} />}
-          {activeStep === 3 && <AccountFinancialDetails onNext={handleNext} onBack={handleBack} />}
-          {activeStep === 4 && <DocumentationCompliance onSubmit={handleSubmit} onBack={handleBack} />}
+            <div>
+              {activeStep === 0 && <EntityInformation onNext={handleNext} />}
+              {activeStep === 1 && (
+                <GovernanceOwnership onNext={handleNext} onBack={handleBack} />
+              )}
+              {activeStep === 2 && (
+                <BusinessOperations onNext={handleNext} onBack={handleBack} />
+              )}
+              {activeStep === 3 && (
+                <AccountFinancialDetails onNext={handleNext} onBack={handleBack} />
+              )}
+              {activeStep === 4 && (
+                <DocumentationCompliance onSubmit={handleSubmit} onBack={handleBack} />
+              )}
+            </div>
+          </div>
+
+          <div className="lg:col-span-1">
+            <ComplianceAgentChat applicationId={applicationId} className="h-[calc(100vh-12rem)]" />
+          </div>
         </div>
       </main>
 

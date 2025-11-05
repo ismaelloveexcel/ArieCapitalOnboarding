@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 
 interface AccountFinancialDetailsProps {
-  onNext: () => void;
+  onNext: (data: any) => void;
   onBack: () => void;
 }
 
@@ -304,7 +304,12 @@ export default function AccountFinancialDetails({ onNext, onBack }: AccountFinan
           <Button type="button" variant="outline" onClick={onBack} data-testid="button-back">
             Back
           </Button>
-          <Button type="button" onClick={onNext} disabled={!isValid()} data-testid="button-next">
+          <Button
+            type="button"
+            onClick={() => onNext(formData)}
+            disabled={!isValid()}
+            data-testid="button-next"
+          >
             Continue to Next Step
           </Button>
         </div>

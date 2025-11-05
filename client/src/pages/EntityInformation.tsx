@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 
 interface EntityInformationProps {
-  onNext: () => void;
+  onNext: (data: any) => void;
 }
 
 export default function EntityInformation({ onNext }: EntityInformationProps) {
@@ -201,7 +201,7 @@ export default function EntityInformation({ onNext }: EntityInformationProps) {
         <div className="col-span-2 flex justify-end mt-4">
           <Button
             type="button"
-            onClick={onNext}
+            onClick={() => onNext(formData)}
             disabled={!isValid()}
             data-testid="button-next"
           >

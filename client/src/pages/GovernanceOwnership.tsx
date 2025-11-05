@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 
 interface GovernanceOwnershipProps {
-  onNext: () => void;
+  onNext: (data: any) => void;
   onBack: () => void;
 }
 
@@ -137,7 +137,12 @@ export default function GovernanceOwnership({ onNext, onBack }: GovernanceOwners
           <Button type="button" variant="outline" onClick={onBack} data-testid="button-back">
             Back
           </Button>
-          <Button type="button" onClick={onNext} disabled={!isValid()} data-testid="button-next">
+          <Button
+            type="button"
+            onClick={() => onNext({ directors, ubos })}
+            disabled={!isValid()}
+            data-testid="button-next"
+          >
             Continue to Next Step
           </Button>
         </div>
