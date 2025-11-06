@@ -31,7 +31,7 @@ export default function ComplianceAgentChat({
       const response = await apiRequest("POST", `/api/applications/${applicationId}/chat`, {
         message: content,
       });
-      return response;
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({

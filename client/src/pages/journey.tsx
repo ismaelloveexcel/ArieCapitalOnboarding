@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import ProgressTabs from "@/components/ProgressTabs";
@@ -16,6 +16,7 @@ import type { Application } from "@shared/schema";
 export default function Journey() {
   const [activeStep, setActiveStep] = useState(0);
   const [applicationId, setApplicationId] = useState<string | null>(null);
+  const hasInitialized = useRef(false);
 
   const steps = [
     "Entity Information",
@@ -25,33 +26,37 @@ export default function Journey() {
     "Documentation & Compliance",
   ];
 
-  // Create application on mount
-  useEffect(() => {
-    if (!applicationId) {
-      createApplicationMutation.mutate();
-    }
-  }, []);
-
   const createApplicationMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest("POST", "/api/applications", {});
+      const response = await apiRequest("POST", "/api/applications", {});
+      const result = await response.json();
+      return result;
     },
     onSuccess: (data: any) => {
       setApplicationId(data.application.id);
     },
   });
 
-  const { data: application } = useQuery<Application>({
+  // Create application on mount
+  useEffect(() => {
+    if (!hasInitialized.current && !applicationId) {
+      hasInitialized.current = true;
+      createApplicationMutation.mutate();
+    }
+  }, []);
+
+  const { data: application, isLoading: isLoadingApplication } = useQuery<Application>({
     queryKey: ["/api/applications", applicationId],
     enabled: !!applicationId,
   });
 
   const updateStageMutation = useMutation({
     mutationFn: async ({ stage, data }: { stage: number; data: any }) => {
-      return await apiRequest("PATCH", `/api/applications/${applicationId}/stage`, {
+      const response = await apiRequest("PATCH", `/api/applications/${applicationId}/stage`, {
         stage,
         data,
       });
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -65,7 +70,8 @@ export default function Journey() {
 
   const submitApplicationMutation = useMutation({
     mutationFn: async (data: { authRepName: string; authRepRole: string }) => {
-      return await apiRequest("POST", `/api/applications/${applicationId}/submit`, data);
+      const response = await apiRequest("POST", `/api/applications/${applicationId}/submit`, data);
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -104,12 +110,24 @@ export default function Journey() {
     }
   };
 
-  if (!applicationId || !application) {
+  if (!applicationId || (isLoadingApplication && !application)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-navy/5 via-background to-background flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-cyan border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-muted-foreground">Initializing application...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Safeguard: if application data isn't loaded yet, show loading
+  if (!application) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-navy/5 via-background to-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-cyan border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading application data...</p>
         </div>
       </div>
     );

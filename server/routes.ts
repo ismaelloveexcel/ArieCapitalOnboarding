@@ -22,12 +22,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: "in_progress",
       });
 
-      // Create initial welcome message
-      const welcomeMessage = await getComplianceAgentResponse(
-        "I'm starting a new corporate account application",
-        [],
-        { stage: 0 }
-      );
+      // Create initial welcome message without blocking the response
+      const welcomeMessage = `Welcome to the Corporate Account Application process. I'm your Compliance Verification Agent, and I'll guide you through each stage of this application.
+
+Please begin by completing the Entity Information section. I'll review your submission and provide feedback as you progress through each stage.
+
+If you have any questions during the application process, feel free to ask me for clarification or guidance.`;
 
       await storage.createAgentMessage({
         applicationId: application.id,
