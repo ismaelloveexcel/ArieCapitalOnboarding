@@ -1,37 +1,52 @@
-import { useState } from "react";
 import SectionHeader from "@/components/SectionHeader";
 import UploadBox from "@/components/UploadBox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { useFormPersistence } from "@/hooks/use-form-persistence";
 
 interface GovernanceOwnershipProps {
   onNext: (data: any) => void;
   onBack: () => void;
+  isSaving?: boolean;
 }
 
-export default function GovernanceOwnership({ onNext, onBack }: GovernanceOwnershipProps) {
-  const [directors, setDirectors] = useState([{ firstName: "", lastName: "" }]);
-  const [ubos, setUbos] = useState([{ firstName: "", lastName: "" }]);
+interface PersonName {
+  firstName: string;
+  lastName: string;
+}
+
+interface GovernanceFormData extends Record<string, unknown> {
+  directors: PersonName[];
+  ubos: PersonName[];
+}
+
+const INITIAL_STATE: GovernanceFormData = {
+  directors: [{ firstName: "", lastName: "" }],
+  ubos: [{ firstName: "", lastName: "" }],
+};
+
+export default function GovernanceOwnership({ onNext, onBack, isSaving = false }: GovernanceOwnershipProps) {
+  const [formData, updateFormData] = useFormPersistence<GovernanceFormData>("governance", INITIAL_STATE);
+
+  const { directors, ubos } = formData;
 
   const addDirector = () => {
-    setDirectors([...directors, { firstName: "", lastName: "" }]);
+    updateFormData({ directors: [...directors, { firstName: "", lastName: "" }] });
   };
 
   const addUBO = () => {
-    setUbos([...ubos, { firstName: "", lastName: "" }]);
+    updateFormData({ ubos: [...ubos, { firstName: "", lastName: "" }] });
   };
 
-  const updateDirector = (index: number, field: string, value: string) => {
-    const updated = [...directors];
-    updated[index] = { ...updated[index], [field]: value };
-    setDirectors(updated);
+  const updateDirector = (index: number, field: keyof PersonName, value: string) => {
+    const updated = directors.map((d, i) => (i === index ? { ...d, [field]: value } : d));
+    updateFormData({ directors: updated });
   };
 
-  const updateUBO = (index: number, field: string, value: string) => {
-    const updated = [...ubos];
-    updated[index] = { ...updated[index], [field]: value };
-    setUbos(updated);
+  const updateUBO = (index: number, field: keyof PersonName, value: string) => {
+    const updated = ubos.map((u, i) => (i === index ? { ...u, [field]: value } : u));
+    updateFormData({ ubos: updated });
   };
 
   const isValid = () => {
@@ -140,10 +155,10 @@ export default function GovernanceOwnership({ onNext, onBack }: GovernanceOwners
           <Button
             type="button"
             onClick={() => onNext({ directors, ubos })}
-            disabled={!isValid()}
+            disabled={!isValid() || isSaving}
             data-testid="button-next"
           >
-            Continue to Next Step
+            {isSaving ? "Saving…" : "Continue to Next Step"}
           </Button>
         </div>
       </div>

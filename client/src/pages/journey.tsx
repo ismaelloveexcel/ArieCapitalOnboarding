@@ -9,13 +9,31 @@ import BusinessOperations from "./BusinessOperations";
 import AccountFinancialDetails from "./AccountFinancialDetails";
 import DocumentationCompliance from "./DocumentationCompliance";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle2, Download } from "lucide-react";
+import { CheckCircle2, Download, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Application } from "@shared/schema";
 
+const APP_ID_STORAGE_KEY = "arie-onboarding-application-id";
+const COMPLETED_STEPS_KEY = "arie-onboarding-completed-steps";
+
 export default function Journey() {
   const [activeStep, setActiveStep] = useState(0);
-  const [applicationId, setApplicationId] = useState<string | null>(null);
+  const [applicationId, setApplicationId] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(APP_ID_STORAGE_KEY);
+    } catch {
+      return null;
+    }
+  });
+  const [completedSteps, setCompletedSteps] = useState<number[]>(() => {
+    try {
+      const saved = localStorage.getItem(COMPLETED_STEPS_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [isSaving, setIsSaving] = useState(false);
   const hasInitialized = useRef(false);
 
   const steps = [
@@ -33,17 +51,38 @@ export default function Journey() {
       return result;
     },
     onSuccess: (data: any) => {
-      setApplicationId(data.application.id);
+      const id = data.application.id;
+      setApplicationId(id);
+      try {
+        localStorage.setItem(APP_ID_STORAGE_KEY, id);
+      } catch {
+        // Ignore storage errors
+      }
     },
   });
 
-  // Create application on mount
+  // Create application on mount only if no saved application ID.
+  // Using a ref to guarantee single execution regardless of StrictMode double-invoke.
+  const createMutateRef = useRef(createApplicationMutation.mutate);
+  createMutateRef.current = createApplicationMutation.mutate;
+
   useEffect(() => {
     if (!hasInitialized.current && !applicationId) {
       hasInitialized.current = true;
-      createApplicationMutation.mutate();
+      createMutateRef.current();
+    } else {
+      hasInitialized.current = true;
     }
-  }, []);
+  }, []); // intentional empty array — run once on mount
+
+  // Persist completed steps to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(COMPLETED_STEPS_KEY, JSON.stringify(completedSteps));
+    } catch {
+      // Ignore storage errors
+    }
+  }, [completedSteps]);
 
   const { data: application, isLoading: isLoadingApplication } = useQuery<Application>({
     queryKey: ["/api/applications", applicationId],
@@ -65,6 +104,10 @@ export default function Journey() {
       queryClient.invalidateQueries({
         queryKey: ["/api/applications", applicationId, "messages"],
       });
+      setIsSaving(false);
+    },
+    onError: () => {
+      setIsSaving(false);
     },
   });
 
@@ -80,15 +123,26 @@ export default function Journey() {
       queryClient.invalidateQueries({
         queryKey: ["/api/applications", applicationId, "messages"],
       });
+      // Clear localStorage on successful submission
+      try {
+        localStorage.removeItem(APP_ID_STORAGE_KEY);
+        localStorage.removeItem(COMPLETED_STEPS_KEY);
+      } catch {
+        // Ignore
+      }
     },
   });
 
   const handleNext = (stageData: any) => {
     if (applicationId) {
+      setIsSaving(true);
       updateStageMutation.mutate(
         { stage: activeStep, data: stageData },
         {
           onSuccess: () => {
+            setCompletedSteps((prev) =>
+              prev.includes(activeStep) ? prev : [...prev, activeStep]
+            );
             if (activeStep < steps.length - 1) {
               setActiveStep(activeStep + 1);
             }
@@ -205,15 +259,25 @@ export default function Journey() {
     <div className="min-h-screen bg-gradient-to-br from-navy/5 via-background to-background">
       <header className="border-b bg-white shadow-sm p-6">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-semibold text-navy" data-testid="text-title">
-            Corporate Account Application
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            All information is collected for due diligence and compliance purposes
-          </p>
-          <div className="mt-2 flex items-center gap-3">
-            <span className="text-xs text-muted-foreground">Reference:</span>
-            <span className="text-xs font-mono font-medium">{application.referenceNumber}</span>
+          <div className="flex items-start justify-between flex-wrap gap-2">
+            <div>
+              <h1 className="text-3xl font-semibold text-navy" data-testid="text-title">
+                Corporate Account Application
+              </h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                All information is collected for due diligence and compliance purposes
+              </p>
+              <div className="mt-2 flex items-center gap-3">
+                <span className="text-xs text-muted-foreground">Reference:</span>
+                <span className="text-xs font-mono font-medium">{application.referenceNumber}</span>
+              </div>
+            </div>
+            {isSaving && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground" data-testid="saving-indicator">
+                <Save className="w-3.5 h-3.5 animate-pulse" />
+                <span>Saving…</span>
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -221,21 +285,26 @@ export default function Journey() {
       <main className="p-6 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            <ProgressTabs steps={steps} activeStep={activeStep} onStepClick={setActiveStep} />
+            <ProgressTabs
+              steps={steps}
+              activeStep={activeStep}
+              onStepClick={setActiveStep}
+              completedSteps={completedSteps}
+            />
 
             <div>
-              {activeStep === 0 && <EntityInformation onNext={handleNext} />}
+              {activeStep === 0 && <EntityInformation onNext={handleNext} isSaving={updateStageMutation.isPending} />}
               {activeStep === 1 && (
-                <GovernanceOwnership onNext={handleNext} onBack={handleBack} />
+                <GovernanceOwnership onNext={handleNext} onBack={handleBack} isSaving={updateStageMutation.isPending} />
               )}
               {activeStep === 2 && (
-                <BusinessOperations onNext={handleNext} onBack={handleBack} />
+                <BusinessOperations onNext={handleNext} onBack={handleBack} isSaving={updateStageMutation.isPending} />
               )}
               {activeStep === 3 && (
-                <AccountFinancialDetails onNext={handleNext} onBack={handleBack} />
+                <AccountFinancialDetails onNext={handleNext} onBack={handleBack} isSaving={updateStageMutation.isPending} />
               )}
               {activeStep === 4 && (
-                <DocumentationCompliance onSubmit={handleSubmit} onBack={handleBack} />
+                <DocumentationCompliance onSubmit={handleSubmit} onBack={handleBack} isSaving={submitApplicationMutation.isPending} />
               )}
             </div>
           </div>

@@ -9,16 +9,19 @@ import { Input } from "@/components/ui/input";
 interface DocumentationComplianceProps {
   onSubmit: (data: { authRepName: string; authRepRole: string }) => void;
   onBack: () => void;
+  isSaving?: boolean;
 }
 
-export default function DocumentationCompliance({ onSubmit, onBack }: DocumentationComplianceProps) {
+export default function DocumentationCompliance({ onSubmit, onBack, isSaving = false }: DocumentationComplianceProps) {
   const [marketingConsent, setMarketingConsent] = useState(false);
   const [emailConsent, setEmailConsent] = useState(false);
+  const [declarationConsent, setDeclarationConsent] = useState(false);
   const [authRepName, setAuthRepName] = useState("");
   const [authRepRole, setAuthRepRole] = useState("");
 
+  // Only the declaration consent and authorized representative fields are required
   const isValid = () => {
-    return marketingConsent && emailConsent && authRepName && authRepRole;
+    return declarationConsent && authRepName && authRepRole;
   };
 
   const handleSubmit = () => {
@@ -69,7 +72,7 @@ export default function DocumentationCompliance({ onSubmit, onBack }: Documentat
         </div>
 
         <div className="border rounded-lg p-4 space-y-4">
-          <Label className="text-base font-semibold">Explicit Consent for Marketing Purpose</Label>
+          <Label className="text-base font-semibold">Marketing Preferences <span className="text-xs font-normal text-muted-foreground">(optional)</span></Label>
           <div className="flex items-start gap-3">
             <Checkbox
               id="marketing-consent"
@@ -98,7 +101,7 @@ export default function DocumentationCompliance({ onSubmit, onBack }: Documentat
         </div>
 
         <div className="border rounded-lg p-4 space-y-4">
-          <Label className="text-base font-semibold">Declaration</Label>
+          <Label className="text-base font-semibold">Declaration *</Label>
           <p className="text-sm text-muted-foreground">
             I, the undersigned, duly authorized representative of this entity, declare that the above information is correct to the best of my knowledge.
           </p>
@@ -126,6 +129,17 @@ export default function DocumentationCompliance({ onSubmit, onBack }: Documentat
               />
             </div>
           </div>
+          <div className="flex items-start gap-3 pt-2">
+            <Checkbox
+              id="declaration-consent"
+              checked={declarationConsent}
+              onCheckedChange={(checked) => setDeclarationConsent(checked as boolean)}
+              data-testid="checkbox-declaration-consent"
+            />
+            <label htmlFor="declaration-consent" className="text-sm text-muted-foreground leading-relaxed cursor-pointer">
+              I confirm that the information provided in this application is accurate and complete to the best of my knowledge. *
+            </label>
+          </div>
         </div>
 
         <div className="flex justify-between mt-6">
@@ -135,10 +149,10 @@ export default function DocumentationCompliance({ onSubmit, onBack }: Documentat
           <Button
             type="button"
             onClick={handleSubmit}
-            disabled={!isValid()}
+            disabled={!isValid() || isSaving}
             data-testid="button-submit-application"
           >
-            Submit Application
+            {isSaving ? "Submitting…" : "Submit Application"}
           </Button>
         </div>
       </div>
