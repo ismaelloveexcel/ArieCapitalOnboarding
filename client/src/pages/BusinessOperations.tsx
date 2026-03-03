@@ -1,26 +1,29 @@
-import { useState } from "react";
 import SectionHeader from "@/components/SectionHeader";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { useFormPersistence } from "@/hooks/use-form-persistence";
 
 interface BusinessOperationsProps {
   onNext: (data: any) => void;
   onBack: () => void;
+  isSaving?: boolean;
 }
 
-export default function BusinessOperations({ onNext, onBack }: BusinessOperationsProps) {
-  const [formData, setFormData] = useState({
-    businessSector: "",
-    businessOverview: "",
-    managementOverview: "",
-    operatingCountries: "",
-    targetMarkets: "",
-  });
+const INITIAL_STATE = {
+  businessSector: "",
+  businessOverview: "",
+  managementOverview: "",
+  operatingCountries: "",
+  targetMarkets: "",
+};
+
+export default function BusinessOperations({ onNext, onBack, isSaving = false }: BusinessOperationsProps) {
+  const [formData, updateFormData] = useFormPersistence("business-ops", INITIAL_STATE);
 
   const handleChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    updateFormData({ [field]: value });
   };
 
   const isValid = () => {
@@ -110,10 +113,10 @@ export default function BusinessOperations({ onNext, onBack }: BusinessOperation
           <Button
             type="button"
             onClick={() => onNext(formData)}
-            disabled={!isValid()}
+            disabled={!isValid() || isSaving}
             data-testid="button-next"
           >
-            Continue to Next Step
+            {isSaving ? "Saving…" : "Continue to Next Step"}
           </Button>
         </div>
       </form>

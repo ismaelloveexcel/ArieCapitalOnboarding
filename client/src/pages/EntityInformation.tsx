@@ -1,33 +1,36 @@
-import { useState } from "react";
 import SectionHeader from "@/components/SectionHeader";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { useFormPersistence } from "@/hooks/use-form-persistence";
 
 interface EntityInformationProps {
   onNext: (data: any) => void;
+  isSaving?: boolean;
 }
 
-export default function EntityInformation({ onNext }: EntityInformationProps) {
-  const [formData, setFormData] = useState({
-    registeredName: "",
-    tradingName: "",
-    contactFirstName: "",
-    contactLastName: "",
-    email: "",
-    mobile: "",
-    registeredAddress: "",
-    businessAddress: "",
-    website: "",
-    incorporationCountry: "",
-    incorporationDate: "",
-    incorporationNumber: "",
-    licenses: "",
-  });
+const INITIAL_STATE = {
+  registeredName: "",
+  tradingName: "",
+  contactFirstName: "",
+  contactLastName: "",
+  email: "",
+  mobile: "",
+  registeredAddress: "",
+  businessAddress: "",
+  website: "",
+  incorporationCountry: "",
+  incorporationDate: "",
+  incorporationNumber: "",
+  licenses: "",
+};
+
+export default function EntityInformation({ onNext, isSaving = false }: EntityInformationProps) {
+  const [formData, updateFormData] = useFormPersistence("entity-info", INITIAL_STATE);
 
   const handleChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    updateFormData({ [field]: value });
   };
 
   const isValid = () => {
@@ -106,7 +109,7 @@ export default function EntityInformation({ onNext }: EntityInformationProps) {
         </div>
 
         <div className="col-span-2 md:col-span-1">
-          <Label htmlFor="mobile">Mobile *</Label>
+          <Label htmlFor="mobile">Mobile</Label>
           <Input
             id="mobile"
             type="tel"
@@ -202,10 +205,10 @@ export default function EntityInformation({ onNext }: EntityInformationProps) {
           <Button
             type="button"
             onClick={() => onNext(formData)}
-            disabled={!isValid()}
+            disabled={!isValid() || isSaving}
             data-testid="button-next"
           >
-            Continue to Next Step
+            {isSaving ? "Saving…" : "Continue to Next Step"}
           </Button>
         </div>
       </form>

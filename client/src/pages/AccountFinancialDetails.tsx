@@ -1,4 +1,3 @@
-import { useState } from "react";
 import SectionHeader from "@/components/SectionHeader";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,36 +10,40 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useFormPersistence } from "@/hooks/use-form-persistence";
 
 interface AccountFinancialDetailsProps {
   onNext: (data: any) => void;
   onBack: () => void;
+  isSaving?: boolean;
 }
 
-export default function AccountFinancialDetails({ onNext, onBack }: AccountFinancialDetailsProps) {
-  const [formData, setFormData] = useState({
-    accountPurpose: "",
-    otherBankAccounts: "NO",
-    otherBankDetails: "",
-    currencies: "",
-    sourceOfWealth: "",
-    initialFunds: "",
-    regularFunds: "",
-    inflowsTransactionsMin: "",
-    inflowsTransactionsMax: "",
-    inflowsAmountsMin: "",
-    inflowsAmountsMax: "",
-    outflowsTransactionsMin: "",
-    outflowsTransactionsMax: "",
-    outflowsAmountsMin: "",
-    outflowsAmountsMax: "",
-    year1Revenue: "",
-    year2Revenue: "",
-    year3Revenue: "",
-  });
+const INITIAL_STATE = {
+  accountPurpose: "",
+  otherBankAccounts: "NO",
+  otherBankDetails: "",
+  currencies: "",
+  sourceOfWealth: "",
+  initialFunds: "",
+  regularFunds: "",
+  inflowsTransactionsMin: "",
+  inflowsTransactionsMax: "",
+  inflowsAmountsMin: "",
+  inflowsAmountsMax: "",
+  outflowsTransactionsMin: "",
+  outflowsTransactionsMax: "",
+  outflowsAmountsMin: "",
+  outflowsAmountsMax: "",
+  year1Revenue: "",
+  year2Revenue: "",
+  year3Revenue: "",
+};
+
+export default function AccountFinancialDetails({ onNext, onBack, isSaving = false }: AccountFinancialDetailsProps) {
+  const [formData, updateFormData] = useFormPersistence("financial-details", INITIAL_STATE);
 
   const handleChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    updateFormData({ [field]: value });
   };
 
   const isValid = () => {
@@ -307,10 +310,10 @@ export default function AccountFinancialDetails({ onNext, onBack }: AccountFinan
           <Button
             type="button"
             onClick={() => onNext(formData)}
-            disabled={!isValid()}
+            disabled={!isValid() || isSaving}
             data-testid="button-next"
           >
-            Continue to Next Step
+            {isSaving ? "Saving…" : "Continue to Next Step"}
           </Button>
         </div>
       </form>

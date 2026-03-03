@@ -1,24 +1,41 @@
-import { useState } from "react";
 import SectionHeader from "@/components/SectionHeader";
 import UploadBox from "@/components/UploadBox";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useFormPersistence } from "@/hooks/use-form-persistence";
 
 interface DocumentationComplianceProps {
   onSubmit: (data: { authRepName: string; authRepRole: string }) => void;
   onBack: () => void;
+  isSaving?: boolean;
 }
 
-export default function DocumentationCompliance({ onSubmit, onBack }: DocumentationComplianceProps) {
-  const [marketingConsent, setMarketingConsent] = useState(false);
-  const [emailConsent, setEmailConsent] = useState(false);
-  const [authRepName, setAuthRepName] = useState("");
-  const [authRepRole, setAuthRepRole] = useState("");
+interface DocumentationFormData extends Record<string, unknown> {
+  marketingConsent: boolean;
+  emailConsent: boolean;
+  declarationConsent: boolean;
+  authRepName: string;
+  authRepRole: string;
+}
 
+const INITIAL_STATE: DocumentationFormData = {
+  marketingConsent: false,
+  emailConsent: false,
+  declarationConsent: false,
+  authRepName: "",
+  authRepRole: "",
+};
+
+export default function DocumentationCompliance({ onSubmit, onBack, isSaving = false }: DocumentationComplianceProps) {
+  const [formData, updateFormData] = useFormPersistence<DocumentationFormData>("documentation", INITIAL_STATE);
+
+  const { marketingConsent, emailConsent, declarationConsent, authRepName, authRepRole } = formData;
+
+  // Only the declaration consent and authorized representative fields are required
   const isValid = () => {
-    return marketingConsent && emailConsent && authRepName && authRepRole;
+    return declarationConsent && authRepName && authRepRole;
   };
 
   const handleSubmit = () => {
@@ -69,12 +86,12 @@ export default function DocumentationCompliance({ onSubmit, onBack }: Documentat
         </div>
 
         <div className="border rounded-lg p-4 space-y-4">
-          <Label className="text-base font-semibold">Explicit Consent for Marketing Purpose</Label>
+          <Label className="text-base font-semibold">Marketing Preferences <span className="text-xs font-normal text-muted-foreground">(optional)</span></Label>
           <div className="flex items-start gap-3">
             <Checkbox
               id="marketing-consent"
               checked={marketingConsent}
-              onCheckedChange={(checked) => setMarketingConsent(checked as boolean)}
+              onCheckedChange={(checked) => updateFormData({ marketingConsent: checked as boolean })}
               data-testid="checkbox-marketing-consent"
             />
             <label htmlFor="marketing-consent" className="text-sm text-muted-foreground leading-relaxed cursor-pointer">
@@ -85,7 +102,7 @@ export default function DocumentationCompliance({ onSubmit, onBack }: Documentat
             <Checkbox
               id="email-consent"
               checked={emailConsent}
-              onCheckedChange={(checked) => setEmailConsent(checked as boolean)}
+              onCheckedChange={(checked) => updateFormData({ emailConsent: checked as boolean })}
               data-testid="checkbox-email-consent"
             />
             <label htmlFor="email-consent" className="text-sm text-muted-foreground leading-relaxed cursor-pointer">
@@ -98,7 +115,7 @@ export default function DocumentationCompliance({ onSubmit, onBack }: Documentat
         </div>
 
         <div className="border rounded-lg p-4 space-y-4">
-          <Label className="text-base font-semibold">Declaration</Label>
+          <Label className="text-base font-semibold">Declaration *</Label>
           <p className="text-sm text-muted-foreground">
             I, the undersigned, duly authorized representative of this entity, declare that the above information is correct to the best of my knowledge.
           </p>
@@ -108,7 +125,7 @@ export default function DocumentationCompliance({ onSubmit, onBack }: Documentat
               <Input
                 id="auth-rep-name"
                 value={authRepName}
-                onChange={(e) => setAuthRepName(e.target.value)}
+                onChange={(e) => updateFormData({ authRepName: e.target.value })}
                 placeholder="Full name"
                 className="mt-1"
                 data-testid="input-auth-rep-name"
@@ -119,12 +136,23 @@ export default function DocumentationCompliance({ onSubmit, onBack }: Documentat
               <Input
                 id="auth-rep-role"
                 value={authRepRole}
-                onChange={(e) => setAuthRepRole(e.target.value)}
+                onChange={(e) => updateFormData({ authRepRole: e.target.value })}
                 placeholder="e.g., Director, CEO"
                 className="mt-1"
                 data-testid="input-auth-rep-role"
               />
             </div>
+          </div>
+          <div className="flex items-start gap-3 pt-2">
+            <Checkbox
+              id="declaration-consent"
+              checked={declarationConsent}
+              onCheckedChange={(checked) => updateFormData({ declarationConsent: checked as boolean })}
+              data-testid="checkbox-declaration-consent"
+            />
+            <label htmlFor="declaration-consent" className="text-sm text-muted-foreground leading-relaxed cursor-pointer">
+              I confirm that the information provided in this application is accurate and complete to the best of my knowledge. *
+            </label>
           </div>
         </div>
 
@@ -135,10 +163,10 @@ export default function DocumentationCompliance({ onSubmit, onBack }: Documentat
           <Button
             type="button"
             onClick={handleSubmit}
-            disabled={!isValid()}
+            disabled={!isValid() || isSaving}
             data-testid="button-submit-application"
           >
-            Submit Application
+            {isSaving ? "Submitting…" : "Submit Application"}
           </Button>
         </div>
       </div>
