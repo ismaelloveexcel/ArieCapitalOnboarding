@@ -1,10 +1,10 @@
-import { useState } from "react";
 import SectionHeader from "@/components/SectionHeader";
 import UploadBox from "@/components/UploadBox";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useFormPersistence } from "@/hooks/use-form-persistence";
 
 interface DocumentationComplianceProps {
   onSubmit: (data: { authRepName: string; authRepRole: string }) => void;
@@ -12,12 +12,26 @@ interface DocumentationComplianceProps {
   isSaving?: boolean;
 }
 
+interface DocumentationFormData extends Record<string, unknown> {
+  marketingConsent: boolean;
+  emailConsent: boolean;
+  declarationConsent: boolean;
+  authRepName: string;
+  authRepRole: string;
+}
+
+const INITIAL_STATE: DocumentationFormData = {
+  marketingConsent: false,
+  emailConsent: false,
+  declarationConsent: false,
+  authRepName: "",
+  authRepRole: "",
+};
+
 export default function DocumentationCompliance({ onSubmit, onBack, isSaving = false }: DocumentationComplianceProps) {
-  const [marketingConsent, setMarketingConsent] = useState(false);
-  const [emailConsent, setEmailConsent] = useState(false);
-  const [declarationConsent, setDeclarationConsent] = useState(false);
-  const [authRepName, setAuthRepName] = useState("");
-  const [authRepRole, setAuthRepRole] = useState("");
+  const [formData, updateFormData] = useFormPersistence<DocumentationFormData>("documentation", INITIAL_STATE);
+
+  const { marketingConsent, emailConsent, declarationConsent, authRepName, authRepRole } = formData;
 
   // Only the declaration consent and authorized representative fields are required
   const isValid = () => {
@@ -77,7 +91,7 @@ export default function DocumentationCompliance({ onSubmit, onBack, isSaving = f
             <Checkbox
               id="marketing-consent"
               checked={marketingConsent}
-              onCheckedChange={(checked) => setMarketingConsent(checked as boolean)}
+              onCheckedChange={(checked) => updateFormData({ marketingConsent: checked as boolean })}
               data-testid="checkbox-marketing-consent"
             />
             <label htmlFor="marketing-consent" className="text-sm text-muted-foreground leading-relaxed cursor-pointer">
@@ -88,7 +102,7 @@ export default function DocumentationCompliance({ onSubmit, onBack, isSaving = f
             <Checkbox
               id="email-consent"
               checked={emailConsent}
-              onCheckedChange={(checked) => setEmailConsent(checked as boolean)}
+              onCheckedChange={(checked) => updateFormData({ emailConsent: checked as boolean })}
               data-testid="checkbox-email-consent"
             />
             <label htmlFor="email-consent" className="text-sm text-muted-foreground leading-relaxed cursor-pointer">
@@ -111,7 +125,7 @@ export default function DocumentationCompliance({ onSubmit, onBack, isSaving = f
               <Input
                 id="auth-rep-name"
                 value={authRepName}
-                onChange={(e) => setAuthRepName(e.target.value)}
+                onChange={(e) => updateFormData({ authRepName: e.target.value })}
                 placeholder="Full name"
                 className="mt-1"
                 data-testid="input-auth-rep-name"
@@ -122,7 +136,7 @@ export default function DocumentationCompliance({ onSubmit, onBack, isSaving = f
               <Input
                 id="auth-rep-role"
                 value={authRepRole}
-                onChange={(e) => setAuthRepRole(e.target.value)}
+                onChange={(e) => updateFormData({ authRepRole: e.target.value })}
                 placeholder="e.g., Director, CEO"
                 className="mt-1"
                 data-testid="input-auth-rep-role"
@@ -133,7 +147,7 @@ export default function DocumentationCompliance({ onSubmit, onBack, isSaving = f
             <Checkbox
               id="declaration-consent"
               checked={declarationConsent}
-              onCheckedChange={(checked) => setDeclarationConsent(checked as boolean)}
+              onCheckedChange={(checked) => updateFormData({ declarationConsent: checked as boolean })}
               data-testid="checkbox-declaration-consent"
             />
             <label htmlFor="declaration-consent" className="text-sm text-muted-foreground leading-relaxed cursor-pointer">

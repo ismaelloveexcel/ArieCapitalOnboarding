@@ -15,6 +15,44 @@ import type { Application } from "@shared/schema";
 
 const APP_ID_STORAGE_KEY = "arie-onboarding-application-id";
 const COMPLETED_STEPS_KEY = "arie-onboarding-completed-steps";
+// Per-step form data keys — must be kept in sync with useFormPersistence key suffixes
+const FORM_STEP_KEYS = [
+  "arie-onboarding-entity-info",
+  "arie-onboarding-governance",
+  "arie-onboarding-business-ops",
+  "arie-onboarding-financial-details",
+  "arie-onboarding-documentation",
+];
+// sessionStorage flag prevents duplicate application creation in React 18 StrictMode
+const CREATING_APP_KEY = "arie-onboarding-creating-app";
+
+/** Removes all onboarding-related persisted state (application ID, steps, and all form data). */
+function clearAllOnboardingPersistence() {
+  try {
+    localStorage.removeItem(APP_ID_STORAGE_KEY);
+    localStorage.removeItem(COMPLETED_STEPS_KEY);
+    for (const key of FORM_STEP_KEYS) {
+      localStorage.removeItem(key);
+    }
+    sessionStorage.removeItem(CREATING_APP_KEY);
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+/** Parse and validate completedSteps from localStorage. */
+function loadCompletedSteps(): number[] {
+  try {
+    const saved = localStorage.getItem(COMPLETED_STEPS_KEY);
+    if (!saved) return [];
+    const parsed = JSON.parse(saved);
+    if (!Array.isArray(parsed)) return [];
+    // Accept only integer values in [0, 4]
+    return parsed.filter((v): v is number => Number.isInteger(v) && v >= 0 && v <= 4);
+  } catch {
+    return [];
+  }
+}
 
 export default function Journey() {
   const [activeStep, setActiveStep] = useState(0);
@@ -25,14 +63,7 @@ export default function Journey() {
       return null;
     }
   });
-  const [completedSteps, setCompletedSteps] = useState<number[]>(() => {
-    try {
-      const saved = localStorage.getItem(COMPLETED_STEPS_KEY);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [completedSteps, setCompletedSteps] = useState<number[]>(loadCompletedSteps);
   const [isSaving, setIsSaving] = useState(false);
   const hasInitialized = useRef(false);
 
@@ -55,24 +86,38 @@ export default function Journey() {
       setApplicationId(id);
       try {
         localStorage.setItem(APP_ID_STORAGE_KEY, id);
+        sessionStorage.removeItem(CREATING_APP_KEY);
       } catch {
         // Ignore storage errors
+      }
+    },
+    onError: () => {
+      try {
+        sessionStorage.removeItem(CREATING_APP_KEY);
+      } catch {
+        // Ignore
       }
     },
   });
 
   // Create application on mount only if no saved application ID.
-  // Using a ref to guarantee single execution regardless of StrictMode double-invoke.
+  // Use sessionStorage to prevent duplicate creation across React 18 StrictMode remounts.
   const createMutateRef = useRef(createApplicationMutation.mutate);
   createMutateRef.current = createApplicationMutation.mutate;
 
   useEffect(() => {
-    if (!hasInitialized.current && !applicationId) {
-      hasInitialized.current = true;
-      createMutateRef.current();
-    } else {
-      hasInitialized.current = true;
+    if (hasInitialized.current || applicationId) {
+      return;
     }
+    hasInitialized.current = true;
+    // Guard against StrictMode double-invoke using a sessionStorage flag
+    try {
+      if (sessionStorage.getItem(CREATING_APP_KEY)) return;
+      sessionStorage.setItem(CREATING_APP_KEY, "1");
+    } catch {
+      // If sessionStorage is unavailable just proceed
+    }
+    createMutateRef.current();
   }, []); // intentional empty array — run once on mount
 
   // Persist completed steps to localStorage
@@ -84,10 +129,24 @@ export default function Journey() {
     }
   }, [completedSteps]);
 
-  const { data: application, isLoading: isLoadingApplication } = useQuery<Application>({
+  const { data: application, isLoading: isLoadingApplication, error: applicationError } = useQuery<Application>({
     queryKey: ["/api/applications", applicationId],
     enabled: !!applicationId,
   });
+
+  // If the persisted application ID is stale/invalid (404 or other error), clear all local
+  // state and start fresh so the user isn't stuck on a permanent loading spinner.
+  // Using functional state updates (setApplicationId(null), etc.) avoids needing applicationId
+  // in the dep array, and createMutateRef always holds the latest mutate function.
+  useEffect(() => {
+    if (!applicationError) return;
+    clearAllOnboardingPersistence();
+    setApplicationId(null);
+    setCompletedSteps([]);
+    setActiveStep(0);
+    hasInitialized.current = false;
+    createMutateRef.current();
+  }, [applicationError]);
 
   const updateStageMutation = useMutation({
     mutationFn: async ({ stage, data }: { stage: number; data: any }) => {
@@ -123,13 +182,8 @@ export default function Journey() {
       queryClient.invalidateQueries({
         queryKey: ["/api/applications", applicationId, "messages"],
       });
-      // Clear localStorage on successful submission
-      try {
-        localStorage.removeItem(APP_ID_STORAGE_KEY);
-        localStorage.removeItem(COMPLETED_STEPS_KEY);
-      } catch {
-        // Ignore
-      }
+      // Clear all persisted onboarding state (including PII form data) on successful submission
+      clearAllOnboardingPersistence();
     },
   });
 
